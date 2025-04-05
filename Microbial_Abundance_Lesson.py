@@ -61,3 +61,15 @@ def classify_new_sample(new_sample_df, trained_model):
     label = label_map.get(predicted_cluster, "Unknown")
 
     return predicted_cluster, label
+def classify_batch(df_new_samples, trained_model):
+    relative_abundance = df_new_samples.div(df_new_samples.sum(axis=0), axis=1) * 100
+    relative_abundance = relative_abundance.round(2)
+    X_features = relative_abundance.T
+    cluster_preds = trained_model.predict(X_features)
+
+    label_map = {0: "Balanced-like", 1: "Dysbiotic-like"}
+    labels = [label_map.get(c, "Unknown") for c in cluster_preds]
+    results_df = pd.DataFrame({"Cluster": cluster_preds,"Cluster Label": labels}, index=X_features.index)
+    return results_df
+
+
