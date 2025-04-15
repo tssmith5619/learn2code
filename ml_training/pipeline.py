@@ -5,7 +5,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 import matplotlib.pyplot as plt
 
-def run_microbiome_pipeline(df_count):
+def run_microbiome_pipeline(df_count, model_version="v1"):
     """
     Runs the full clustering and classification pipeline on a raw count matrix.
 
@@ -42,6 +42,14 @@ def run_microbiome_pipeline(df_count):
     clf = RandomForestClassifier(random_state=42)
     clf.fit(X_train, y_train)
     y_pred = clf.predict(X_test)
+
+    import os
+    import joblib
+
+    model_path = os.path.join("models", f"model_{model_version}.joblib")
+    joblib.dump(clf, model_path)
+    print(f"✅ Model saved as {model_path}")
+
 
     # Step 4: Report and feature importance
     print("Classification Report:")
