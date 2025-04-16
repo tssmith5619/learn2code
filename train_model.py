@@ -3,11 +3,12 @@ import pandas as pd
 from ml_training.pipeline import run_microbiome_pipeline
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: python train_model.py <model_version>")
+    if len(sys.argv) != 3:
+        print("Usage: python train_model.py <path/to/data.csv> <model_version>")
         sys.exit(1)
 
-    model_version = sys.argv[1]
+    csv_path = sys.argv[1]
+    model_version = sys.argv[2]
 
     try:
         df = pd.read_csv("microbial_counts.csv", index_col=0)

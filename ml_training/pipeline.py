@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 import matplotlib.pyplot as plt
+import os
 import json
 from datetime import date
 
@@ -66,7 +67,9 @@ def run_microbiome_pipeline(df_count, model_version="v1"):
     plt.xlabel("Feature Importance")
     plt.title("Microbial Features Driving Cluster Prediction")
     plt.tight_layout()
-    plt.show()
+    plt.savefig(f"models/model_{model_version}_feature_importance.png")
+    plt.close()
+
 
     # Step 5: Save metadata
     metadata = {
@@ -151,3 +154,24 @@ def classify_batch(df_new_samples, trained_model):
     return results_df
 
 
+def check_if_retraining_needed(current_version: str, threshold: int = 50):
+    """
+    Checks whether the number of new samples classified since the last model version
+    exceeds a threshold. Returns True if retraining is recommended.
+    """
+    log_path = "classified_sample_log.csv"
+    meta_path = os.path.join("models", f"model_{current_version}_metadata.json")
+
+    if not os.path.exists(log_path) or not os.path.exists(meta_path):
+        print("❌ Missing classification log or model metadata.")
+        return False
+
+    log_df = pd.read_csv(log_path)
+    with open(meta_path, "r") as f:
+        metadata = json.load(f)
+
+    trained_on_samples = metadata.get("samples", 0)
+    new_samples = len(log_df) - trained_on_samples
+
+    print(f"📊 {new_samples} new samples since model version {current_version} was trained.")
+    return new_samples >= threshold
