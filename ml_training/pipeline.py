@@ -4,6 +4,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 import matplotlib.pyplot as plt
+import json
+from datetime import date
+
 
 def run_microbiome_pipeline(df_count, model_version="v1"):
     """
@@ -64,6 +67,22 @@ def run_microbiome_pipeline(df_count, model_version="v1"):
     plt.title("Microbial Features Driving Cluster Prediction")
     plt.tight_layout()
     plt.show()
+
+    # Step 5: Save metadata
+    metadata = {
+        "version": model_version,
+        "trained_on": str(date.today()),
+        "samples": df_count.shape[1],
+        "features": df_count.shape[0],
+        "accuracy": float((y_pred == y_test).mean()),
+        "notes": "Initial production model"
+    }
+
+    meta_path = os.path.join("models", f"model_{model_version}_metadata.json")
+    with open(meta_path, "w") as f:
+        json.dump(metadata, f, indent=2)
+
+    print(f"✅ Metadata saved as {meta_path}")
 
     return {
         "clustered_data": X_features,
@@ -130,3 +149,5 @@ def classify_batch(df_new_samples, trained_model):
     }, index=X_features.index)
 
     return results_df
+
+
