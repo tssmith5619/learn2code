@@ -1,0 +1,24 @@
+# Python virtual environments
+.env/
+.venv/
+bioenv*/
+venv*/
+# Jupyter checkpoints
+.ipynb_checkpoints/
+# Compiled Python / C extensions
+*.so
+*.dylib
+# Caches and metadata
+__pycache__/
+*.py[cod]
+# VS Code settings
+.vscode/
+*.code-workspace
+# Logs & temporary files
+*.log
+*.tmp
+*.swp
+# Large data & model artifacts
+data/
+models/
+
