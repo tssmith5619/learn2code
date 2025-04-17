@@ -6,7 +6,8 @@ from sklearn.metrics import classification_report
 import matplotlib.pyplot as plt
 import os
 import json
-from datetime import date
+from datetime import date, datetime
+
 
 
 def run_microbiome_pipeline(df_count, model_version="v1"):
@@ -175,3 +176,27 @@ def check_if_retraining_needed(current_version: str, threshold: int = 50):
 
     print(f"📊 {new_samples} new samples since model version {current_version} was trained.")
     return new_samples >= threshold
+
+def log_prediction(sample_id: str, prediction: str, model_version: str, log_path: str = "classified_sample_log.csv"):
+    """
+    Logs a single prediction to a CSV file.
+
+    Parameters:
+        sample_id (str): Unique identifier for the sample
+        prediction (str): Model output label (e.g., 'Balanced-like')
+        model_version (str): Model version used to generate prediction
+        log_path (str): Path to the CSV log file (default: 'classified_sample_log.csv')
+    """
+    entry = pd.DataFrame([{
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "sample_id": sample_id,
+        "prediction": prediction,
+        "model_version": model_version
+    }])
+
+    if os.path.exists(log_path):
+        entry.to_csv(log_path, mode="a", header=False, index=False)
+    else:
+        entry.to_csv(log_path, index=False)
+
+    print(f"📋 Logged prediction for {sample_id} to {log_path}")
