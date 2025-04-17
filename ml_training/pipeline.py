@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import os
 import json
 from datetime import date, datetime
+import shap
 
 
 
@@ -177,21 +178,13 @@ def check_if_retraining_needed(current_version: str, threshold: int = 50):
     print(f"📊 {new_samples} new samples since model version {current_version} was trained.")
     return new_samples >= threshold
 
-def log_prediction(sample_id: str, prediction: str, model_version: str, log_path: str = "classified_sample_log.csv"):
-    """
-    Logs a single prediction to a CSV file.
-
-    Parameters:
-        sample_id (str): Unique identifier for the sample
-        prediction (str): Model output label (e.g., 'Balanced-like')
-        model_version (str): Model version used to generate prediction
-        log_path (str): Path to the CSV log file (default: 'classified_sample_log.csv')
-    """
+def log_prediction(sample_id: str, prediction: str, model_version: str, shap_summary: str = None, log_path: str = "classified_sample_log.csv"):
     entry = pd.DataFrame([{
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "sample_id": sample_id,
         "prediction": prediction,
-        "model_version": model_version
+        "model_version": model_version,
+        "shap_summary": shap_summary or ""
     }])
 
     if os.path.exists(log_path):
@@ -199,4 +192,42 @@ def log_prediction(sample_id: str, prediction: str, model_version: str, log_path
     else:
         entry.to_csv(log_path, index=False)
 
-    print(f"📋 Logged prediction for {sample_id} to {log_path}")
+    print(f"📋 Logged prediction for {sample_id} with SHAP summary.")
+
+
+
+
+def get_shap_summary_for_sample(sample_df: pd.DataFrame, trained_model) -> str:
+    """
+    Returns a summary of SHAP values for a single sample, formatted as 'Feature:+0.12, Feature:-0.03'
+    """
+    sample_df = sample_df.select_dtypes(include="number")
+    relative_abundance = sample_df.div(sample_df.sum(axis=0), axis=1) * 100
+    relative_abundance = relative_abundance.round(2)
+    X_sample = relative_abundance.T
+
+    # Ensure feature order matches model
+    X_sample = X_sample[trained_model.feature_names_in_]
+
+    explainer = shap.TreeExplainer(trained_model)
+    shap_values = explainer.shap_values(X_sample)
+
+    # Determine correct output shape
+    if isinstance(shap_values, list) and len(shap_values) > 1:
+        shap_vals = shap_values[1][0]  # class 1, sample 0
+    else:
+        shap_vals = shap_values[0]     # single-output classifier
+
+    # Flatten the SHAP values for the single sample
+    shap_vals_flat = shap_vals.flatten()
+
+    # Create summary string
+    summary = ", ".join([
+        f"{feature}:{float(shap_vals_flat[i]):+.2f}" for i, feature in enumerate(X_sample.columns)
+    ])
+
+
+    return summary
+
+
+
