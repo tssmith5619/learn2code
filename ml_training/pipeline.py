@@ -9,6 +9,7 @@ import json
 from datetime import date, datetime
 import shap
 import csv
+import joblib
 
 def run_microbiome_pipeline(df_count, model_version="v1"):
     """
@@ -164,3 +165,60 @@ def get_shap_summary_for_sample(sample_df: pd.DataFrame, trained_model) -> str:
 
 
 
+def compare_models(model_path_a, model_path_b, data_path):
+    """
+    Compare two trained models on the same input data.
+
+    Parameters:
+        model_path_a (str): Path to first model (e.g., model_v2.joblib)
+        model_path_b (str): Path to second model (e.g., model_v3.joblib)
+        data_path (str): Path to CSV containing microbial counts
+
+    Returns:
+        str: model name of the better performing model
+    """
+    df = pd.read_csv(data_path, index_col=0)
+    df = df.select_dtypes(include="number")
+
+    relative_abundance = df.div(df.sum(axis=0), axis=1) * 100
+    relative_abundance = relative_abundance.round(2)
+    X = relative_abundance.T
+
+    model_a = joblib.load(model_path_a)
+    model_b = joblib.load(model_path_b)
+
+    preds_a = model_a.predict(X)
+    preds_b = model_b.predict(X)
+
+    accuracy_a = (preds_a == preds_b).mean()
+    accuracy_b = (preds_b == preds_a).mean()
+
+    print(f"{model_path_a} vs {model_path_b}")
+    print(f"✅ Agreement with each other: {accuracy_a:.2f}")
+
+    return model_path_a if accuracy_a >= accuracy_b else model_path_b
+
+
+def promote_model(version: str):
+    """
+    Promotes the specified model version to 'current_model.joblib' and 'current_model_metadata.json'.
+
+    Parameters:
+        version (str): The model version to promote (e.g., 'v3')
+    """
+    src_model = os.path.join("models", f"model_{version}.joblib")
+    src_meta = os.path.join("models", f"model_{version}_metadata.json")
+
+    dest_model = os.path.join("models", "current_model.joblib")
+    dest_meta = os.path.join("models", "current_model_metadata.json")
+
+    if not os.path.exists(src_model) or not os.path.exists(src_meta):
+        print(f"❌ Model version {version} not found.")
+        return
+
+    # Copy both model and metadata
+    import shutil
+    shutil.copyfile(src_model, dest_model)
+    shutil.copyfile(src_meta, dest_meta)
+
+    print(f"🚀 Promoted model version {version} to current_model.joblib")
