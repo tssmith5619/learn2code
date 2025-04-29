@@ -127,7 +127,23 @@ def check_if_retraining_needed(current_version: str, threshold: int = 50):
     print(f"📊 {new_samples} new samples since model version {current_version} was trained.")
     return new_samples >= threshold
 
-def log_prediction(sample_id: str, prediction: str, model_version: str, shap_summary: str = None, log_path: str = "classified_sample_log.csv"):
+# ─── fixed log directory ─────────────────────────────────────────────────
+LOG_DIR = os.path.join(os.path.dirname(__file__), "..", "logs")
+os.makedirs(LOG_DIR, exist_ok=True)             # create logs/ if it doesn't exist
+# ─────────────────────────────────────────────────────────────────────────
+
+def log_prediction(
+    sample_id: str,
+    prediction: str,
+    model_version: str,
+    shap_summary: str | None = None,
+    log_filename: str = "classified_sample_log.csv",
+):
+    """
+    Append one prediction to logs/<log_filename> (CSV, quoted).
+    """
+    log_path = os.path.join(LOG_DIR, log_filename)
+
     entry = pd.DataFrame([{
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "sample_id": sample_id,
@@ -136,13 +152,16 @@ def log_prediction(sample_id: str, prediction: str, model_version: str, shap_sum
         "shap_summary": shap_summary or ""
     }])
 
-    if os.path.exists(log_path):
-        entry.to_csv(log_path, mode="a", header=False, index=False, quoting=csv.QUOTE_ALL)
-    else:
-        entry.to_csv(log_path, index=False, quoting=csv.QUOTE_ALL)
+    entry.to_csv(
+        log_path,
+        mode="a" if os.path.exists(log_path) else "w",
+        header=not os.path.exists(log_path),
+        index=False,
+        quoting=csv.QUOTE_ALL,
+    )
 
-    print(f"📋 Logged prediction for {sample_id} with SHAP summary.")
-
+    print(f"📋 Logged prediction for {sample_id} → {log_path}")
+    
 def get_shap_summary_for_sample(sample_df: pd.DataFrame, trained_model) -> str:
     sample_df = sample_df.select_dtypes(include="number")
     relative_abundance = sample_df.div(sample_df.sum(axis=0), axis=1) * 100
