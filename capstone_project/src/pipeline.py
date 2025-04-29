@@ -94,6 +94,10 @@ def classify_batch(df_new_samples, trained_model):
     relative_abundance = relative_abundance.round(2)
     X_features = relative_abundance.T
 
+    print("DEBUG—model expects:", trained_model.feature_names_in_)
+    print("DEBUG—X_features columns:", list(X_features.columns[:10]))
+
+
     cluster_preds = trained_model.predict(X_features)
     label_map = {0: "Balanced-like", 1: "Dysbiotic-like"}
     labels = [label_map.get(c, "Unknown") for c in cluster_preds]

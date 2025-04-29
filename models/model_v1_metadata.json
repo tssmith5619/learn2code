@@ -1,8 +1,0 @@
-{
-  "version": "v1",
-  "trained_on": "2025-04-16",
-  "samples": 20,
-  "features": 7,
-  "accuracy": 0.8333333333333334,
-  "notes": "Initial production model"
-}
