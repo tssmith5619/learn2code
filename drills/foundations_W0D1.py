@@ -12,3 +12,5 @@ for p in products:
 
 print(counts)
 
+for k, v in sorted(counts.items(), key=lambda pair: pair[1], reverse=True):
+    print(f"{k}: {v}")
